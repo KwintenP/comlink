@@ -14,7 +14,7 @@
 import {
   Endpoint,
   EventSource,
-  Message,
+  Message, MessageSource,
   MessageType,
   PostMessageWithOrigin,
   WireValue,
@@ -125,7 +125,7 @@ export const transferHandlers = new Map<string, TransferHandler>([
 
 export function expose(obj: any, ep: Endpoint = self as any) {
   ep.addEventListener("message", function callback(ev: MessageEvent) {
-    if (!ev || !ev.data) {
+    if (!ev || !ev.data || ev.data.source === MessageSource.SERVER) {
       return;
     }
     const { id, type, path } = {
@@ -184,7 +184,7 @@ export function expose(obj: any, ep: Endpoint = self as any) {
       })
       .then(returnValue => {
         const [wireValue, transferables] = toWireValue(returnValue);
-        ep.postMessage({ ...wireValue, id }, transferables);
+        ep.postMessage({ ...wireValue, id, source: MessageSource.SERVER }, transferables);
         if (type === MessageType.RELEASE) {
           // detach and deactive after sending release response above.
           ep.removeEventListener("message", callback as any);
@@ -374,7 +374,7 @@ function requestResponseMessage(
   return new Promise(resolve => {
     const id = generateUUID();
     ep.addEventListener("message", function l(ev: MessageEvent) {
-      if (!ev.data || !ev.data.id || ev.data.id !== id) {
+      if (!ev.data || !ev.data.id || ev.data.id !== id || ev.data.source === MessageSource.CLIENT) {
         return;
       }
       ep.removeEventListener("message", l as any);
@@ -383,7 +383,7 @@ function requestResponseMessage(
     if (ep.start) {
       ep.start();
     }
-    ep.postMessage({ id, ...msg }, transfers);
+    ep.postMessage({ id, ...msg, source: MessageSource.CLIENT }, transfers);
   });
 }
 

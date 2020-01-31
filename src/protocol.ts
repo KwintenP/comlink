@@ -70,6 +70,11 @@ export const enum MessageType {
   RELEASE
 }
 
+export const enum MessageSource {
+  CLIENT,
+  SERVER
+}
+
 export interface GetMessage {
   id?: MessageID;
   type: MessageType.GET;
